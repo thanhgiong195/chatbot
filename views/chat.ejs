@@ -1,0 +1,82 @@
+<%- include('header') %>
+  <link href="/vendor/ubold/assets/css/core.css" rel="stylesheet" type="text/css" />
+  <style>
+    /*.card-box {display: none;}*/
+  </style>
+  <div id="speakbot">
+    <a href="/" style="position: absolute;right: 0%;top: 109px;"><button class="button" style="vertical-align:middle"><span>Eng checker </span></button></a>
+    <div class="row" style="margin-top: 100px;">
+      <section class="section">
+        <div class="col-md-8 col-md-offset-2">
+          <div class="card-box" style="height: 450px">
+            <h4 class="m-t-0 m-b-20 header-title text-center"><b>Chat</b></h4>
+
+            <div class="chat-conversation" style="height:100%;">
+              <ul class="conversation-list nicescroll" style="height: 85%;">
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <button id="start-speak"><i class="fa fa-microphone"></i></button>
+    </footer>
+  </div>
+  <!-- chat  -->
+  <script src="/vendor/ubold/assets/plugins/moment/moment.js"></script>
+  <script src="/vendor/ubold/assets/pages/jquery.chat.js"></script>
+  <script>
+    const socket = io();
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    $('#start-speak').click(function() {
+      recognition.stop();
+      recognition.start();
+      console.log('Start listening....');
+    });
+
+    recognition.addEventListener('speechend', () => {
+      recognition.stop();
+    });
+
+    recognition.addEventListener('speechstart', () => {
+      console.log('Speech has been detected.');
+    });
+
+    recognition.addEventListener('result', (e) => {
+      console.log('Result has been detected.');
+
+      let last = e.results.length - 1;
+      let text = e.results[last][0].transcript;
+
+      console.log(text);
+      $.ChatApp.user_save(text);
+      socket.emit('user_speak', text);
+      recognition.stop();
+    });
+
+    function synthVoice(text) {
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance();
+      utterance.text = text;
+      synth.speak(utterance);
+    }
+
+    socket.on('bot_speak', function(data) {
+      synthVoice(data);
+
+      if(data == '') data = '(No answer...)';
+      $.ChatApp.bot_save(data);
+    });
+
+  </script>
+<%- include('footer') %>
